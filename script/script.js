@@ -38,19 +38,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const typing = event => {
             const target = event.target;
 
-            if ( target.tagName.toLowerCase() === 'button') {
+            if (target.tagName.toLowerCase() === "button") {
+                const buttons = [...keyboard.querySelectorAll("button")]
+                  .filter(elem => elem.style.visibility !== "hidden");
+                console.dir(buttons);
                 const contentButton = target.textContent.trim();
-                const buttons = [...keyboard.querySelectorAll('button')].filter(elem => elem.style.visibility !== 'hidden');
-                if (target.id != 'keyboard-backspace') {
-                    if (target.textContent === '') {
-                        searchInput.value += ' ';
-                    } else if( contentButton === 'en' || contentButton === 'ru'){
-                        changeLang(buttons, contentButton);
-                    } else {
-                        searchInput.value += target.textContent.trim();
-                    }
-                } else { 
-                    searchInput.value = searchInput.value.slice(0, -1);
+                if (contentButton === "⬅") {
+                  searchInput.value = searchInput.value.slice(0,-1);
+                } else if (!contentButton) {
+                  searchInput.value += " ";
+                } else if (contentButton === "en" ||
+                contentButton === "ru") {
+                  changeLang(buttons,contentButton)
+                } else {
+                  searchInput.value += contentButton;
                 }
             }
 
@@ -155,5 +156,44 @@ document.addEventListener('DOMContentLoaded', () => {
         const API_KEY = 'AIzaSyDqenKmMY3UHdwcJk8kuo5N-9Dyzm-5m2k';
         
         const CLIENT_ID = '516587106109-55lae4bgou262gklfprbul313mp1a5ag.apps.googleusercontent.com';
+
+        //authorization
+        {
+
+            const buttonAuth = document.getElementById('authorize');
+            const authBlock = document.querySelector('.auth');
+
+
+            gapi.load("client:auth2", function() {
+                gapi.auth2.init({client_id: CLIENT_ID});
+              });
+              
+              
+            function authenticate() {
+                return gapi.auth2.getAuthInstance()
+                    .signIn({scope: "https://www.googleapis.com/auth/youtube.readonly"})
+                    .then(function() { console.log("Sign-in successful"); },
+                          function(err) { console.error("Error signing in", err); });
+              }
+              function loadClient() {
+                gapi.client.setApiKey(API_KEY);
+                return gapi.client.load("https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest")
+                    .then(function() { console.log("GAPI client loaded for API"); },
+                          function(err) { console.error("Error loading GAPI client for API", err); });
+              }
+              // Make sure the client is loaded and sign-in is complete before calling this method.
+              function execute() {
+                return gapi.client.youtube.channels.list({})
+                    .then(function(response) {
+                            // Handle the results here (response.result has the parsed body).
+                            console.log("Response", response);
+                          },
+                          function(err) { console.error("Execute error", err); });
+              }
+              
+              buttonAuth.addEventListener('click', () => {
+                authenticate().then(loadClient);
+              });
+        }
     }
 });
